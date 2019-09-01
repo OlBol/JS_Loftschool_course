@@ -11,6 +11,11 @@
    createDivWithText('loftschool') // создаст элемент div, поместит в него 'loftschool' и вернет созданный элемент
  */
 function createDivWithText(text) {
+    const div = document.createElement('div');
+
+    div.innerText = text;
+
+    return div;
 }
 
 /*
@@ -22,6 +27,7 @@ function createDivWithText(text) {
    prepend(document.querySelector('#one'), document.querySelector('#two')) // добавит элемент переданный первым аргументом в начало элемента переданного вторым аргументом
  */
 function prepend(what, where) {
+    where.prepend(what);
 }
 
 /*
@@ -44,6 +50,14 @@ function prepend(what, where) {
    findAllPSiblings(document.body) // функция должна вернуть массив с элементами div и span т.к. следующим соседом этих элементов является элемент с тегом P
  */
 function findAllPSiblings(where) {
+    const elements = where.querySelectorAll('p');
+    const array = [];
+
+    for (const el of elements) {
+        array.push(el.previousSibling);
+    }
+
+    return array;
 }
 
 /*
@@ -64,9 +78,9 @@ function findAllPSiblings(where) {
    findError(document.body) // функция должна вернуть массив с элементами 'привет' и 'loftschool'
  */
 function findError(where) {
-    var result = [];
+    const result = [];
 
-    for (var child of where.childNodes) {
+    for (const child of where.children) {
         result.push(child.innerText);
     }
 
@@ -86,6 +100,11 @@ function findError(where) {
    должно быть преобразовано в <div></div><p></p>
  */
 function deleteTextNodes(where) {
+    for (const child of where.childNodes) {
+        if (child.nodeType == 3) {
+            where.removeChild(child);
+        }
+    }
 }
 
 /*
@@ -101,7 +120,30 @@ function deleteTextNodes(where) {
    должно быть преобразовано в <span><div><b></b></div><p></p></span>
  */
 function deleteTextNodesRecursive(where) {
+    const nodes = [...where.childNodes];
+
+    for (const child of nodes) {
+        if (child.nodeType == 3) {
+            where.removeChild(child);
+        }
+
+        if (child.childNodes.length > 0) {
+            deleteTextNodesRecursive(child);
+        }
+    }
 }
+
+// function deleteTextNodesRecursive(where) {
+//     for (const child of where.childNodes) {
+//         if (child.nodeType == 3) {
+//             where.removeChild(child);
+//         }
+//
+//         if (child.childNodes.length > 0) {
+//             deleteTextNodesRecursive(child);
+//         }
+//     }
+// }
 
 /*
  Задание 7 *:
@@ -123,7 +165,45 @@ function deleteTextNodesRecursive(where) {
      texts: 3
    }
  */
-function collectDOMStat(root) {
+function collectDOMStat(root, obj) {
+    // const main = [...root.childNodes];
+    if (obj == undefined) {
+        obj = {
+            tags: {},
+            classes: {},
+            texts: 0
+        };
+    }
+
+    for (const node of root.childNodes) {
+        if (node.nodeType === 3) {
+            obj.texts++;
+        }
+
+        if (node.nodeType === 1) {
+            if (obj.tags.hasOwnProperty(node.tagName)) {
+                obj.tags[node.tagName]++;
+            } else {
+                obj.tags[node.tagName] = 1;
+            }
+
+
+            for (const className of node.classList) {
+                if (obj.classes.hasOwnProperty([className])) {
+                    obj.classes[className]++;
+                } else {
+                    obj.classes[className] = 1;
+                }
+            }
+
+        }
+
+        if (node.childNodes.length > 0) {
+            collectDOMStat(node, obj);
+        }
+    }
+
+    return obj;
 }
 
 /*
@@ -159,6 +239,44 @@ function collectDOMStat(root) {
    }
  */
 function observeChildNodes(where, fn) {
+    const obj = {
+        type: '',
+        nodes: []
+    };
+
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            const insertNodes = [];
+            const delNodes = [];
+
+            for (const el of mutation.addedNodes) {
+                insertNodes.push(el);
+            }
+
+            for (const el of mutation.removedNodes) {
+                delNodes.push(el);
+            }
+
+            if (insertNodes.length > 0) {
+                obj.type = 'insert';
+                obj.nodes = insertNodes;
+                fn(obj);
+            }
+
+            if (delNodes.length > 0) {
+                obj.type = 'remove';
+                obj.nodes = delNodes;
+                fn(obj);
+            }
+        });
+    });
+
+    const config = {
+        childList: true,
+        subtree: true
+    };
+
+    observer.observe(where, config);
 }
 
 export {
