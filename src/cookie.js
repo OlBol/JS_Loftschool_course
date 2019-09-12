@@ -13,7 +13,7 @@
 
  Если добавляется cookie с именем уже существующией cookie, то ее значение в браузере и таблице должно быть обновлено
 
- 7.3: На странице должно быть текстовое поле для фильтрации cookie
+ 7.3: На странице должно быть текстовое поле для фильтрации
  В таблице должны быть только те cookie, в имени или значении которых, хотя бы частично, есть введенное значение
  Если в поле фильтра пусто, то должны выводиться все доступные cookie
  Если дабавляемая cookie не соответсвуте фильтру, то она должна быть добавлена только в браузер, но не в таблицу
@@ -43,10 +43,86 @@ const addButton = homeworkContainer.querySelector('#add-button');
 // таблица со списком cookie
 const listTable = homeworkContainer.querySelector('#list-table tbody');
 
+
 filterNameInput.addEventListener('keyup', function() {
-    // здесь можно обработать нажатия на клавиши внутри текстового поля для фильтрации cookie
+    upCookie();
 });
 
-addButton.addEventListener('click', () => {
-    // здесь можно обработать нажатие на кнопку "добавить cookie"
+addButton.addEventListener('click', function() {
+    document.cookie = `${addNameInput.value}=${addValueInput.value}`;
+    upCookie();
 });
+
+function upCookie() {
+    listTable.innerHTML = '';
+
+    if (document.cookie) {
+        const array = document.cookie.split('; ');
+
+        array.forEach(function(item) {
+            return listCookie(item.split('='));
+        });
+    }
+}
+
+function listCookie(cookie) {
+    if (filterNameInput.value) {
+        for (const key of cookie) {
+            if (isMatching(key, filterNameInput.value) || isMatching(cookie[key], filterNameInput.value)) {
+                addCookie(cookie);
+
+                return;
+            }
+        }
+    } else {
+        addCookie(cookie);
+    }
+}
+
+function addCookie(cookie) {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td');
+    const tdValue = document.createElement('td');
+    const tdBtn = document.createElement('td');
+    const removeBtn = document.createElement('button');
+    const fragment = document.createDocumentFragment();
+    const [name, value] = cookie;
+
+    tdName.innerText = name;
+    tdValue.innerText = value;
+    removeBtn.innerText = 'Удалить';
+
+    tr.appendChild(tdName);
+    tr.appendChild(tdValue);
+    tdBtn.appendChild(removeBtn);
+    tr.appendChild(tdBtn);
+    fragment.appendChild(tr);
+    listTable.appendChild(fragment);
+
+    removeBtn.addEventListener('click', function (ev) {
+        removeCookie(ev.target);
+    });
+}
+
+function removeCookie(target) {
+    const tr = target.closest('tr');
+    const name = tr.querySelector('td:first-child').textContent;
+    const value = tr.querySelector('td:nth-child(2)').textContent;
+
+    tr.remove();
+    document.cookie = name + '=' + value + ';expires=\'Thu, 01 Jan 1970 00:00:01 GMT\'';
+}
+
+function isMatching(full, chunk) {
+    if (full !== undefined) {
+        const regexp = new RegExp(chunk, 'i');
+
+        if (full.search(regexp) != -1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+upCookie();
